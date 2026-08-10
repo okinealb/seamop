@@ -51,6 +51,9 @@ Remove ten vertical seams:
 seamop remove examples/medium.jpg --direction vertical --count 10
 ```
 
+The default backward strategy uses gradient energy. Select pure forward energy
+with `--strategy forward`; do not combine it with `--energy`.
+
 Other commands and options are available through the built-in help:
 
 ```bash
@@ -98,6 +101,23 @@ result = resize_plan.result()
 Both output methods return independent arrays. Calling either method does not
 change the plan.
 
+The default strategy is backward seam carving with `GradientEnergy`. The
+forward strategy can be selected explicitly:
+
+```python
+from seamop import CarvingStrategy
+
+result = seamop.resize(
+    "examples/medium.jpg",
+    width=400,
+    height=240,
+    strategy=CarvingStrategy.FORWARD,
+)
+```
+
+Backward carving also accepts built-in or custom energy callables through
+`energy=`. Pure forward carving does not accept an energy callable.
+
 See the [Python API guide](docs/api.md) for input rules, custom energy methods,
 errors, and the advanced seam-calculation interface.
 
@@ -131,7 +151,7 @@ uv run --frozen pytest benchmarks
 
 - Only shrinking is supported.
 - Width is reduced before height when both dimensions change.
-- Results depend on the image and selected energy method.
+- Results depend on the image and selected carving strategy and energy method.
 - Large reductions can distort important content.
 
 ## License

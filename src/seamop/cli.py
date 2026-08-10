@@ -14,11 +14,12 @@ from PIL import Image
 from ._image import ImageDecodeError, normalize_image
 from ._plan import DEFAULT_HIGHLIGHT_COLOR
 from ._validation import validate_num_seams
-from .core import plan, resize
+from .core import CarvingStrategy, plan, resize
 from .logger import setup_cli_logging
 from .methods import EnergyMethod, GradientEnergy, LaplacianEnergy, SobelEnergy
 
 EnergyName = Literal["gradient", "sobel", "laplacian"]
+StrategyName = Literal["backward", "forward"]
 Direction = Literal["vertical", "horizontal"]
 CommandName = Literal["resize", "remove", "highlight"]
 
@@ -76,7 +77,10 @@ class CommonOptions:
     output
         Output path. A descriptive name is used when omitted.
     energy
-        Energy method used to rank pixels.
+        Energy method used to rank pixels with the backward strategy. If
+        omitted, forward strategy uses pure forward energy.
+    strategy
+        Seam-carving strategy.
     log_file
         Path to save the log file.
     verbose
@@ -86,7 +90,8 @@ class CommonOptions:
     """
 
     output: Annotated[Path | None, Parameter(alias="-o")] = None
-    energy: Annotated[EnergyName, Parameter(alias="-e")] = "gradient"
+    energy: Annotated[EnergyName | None, Parameter(alias="-e")] = None
+    strategy: StrategyName = "backward"
     log_file: Annotated[Path | None, Parameter(alias="-l")] = None
     verbose: Annotated[bool, Parameter(alias="-v")] = False
     quiet: Annotated[bool, Parameter(alias="-q")] = False
@@ -204,7 +209,12 @@ def _execute(
         logger.info(f"Loading image from {input}...")
         image = normalize_image(input)
         logger.debug(f"Image loaded with shape {image.shape}.")
-        method = _ENERGY_METHODS[options.energy]()
+        strategy = CarvingStrategy(options.strategy)
+        energy: EnergyMethod | None
+        if options.energy is None:
+            energy = None if strategy is CarvingStrategy.FORWARD else GradientEnergy()
+        else:
+            energy = _ENERGY_METHODS[options.energy]()
 
         if command == "remove":
             assert direction is not None and count is not None
@@ -231,7 +241,8 @@ def _execute(
                 image,
                 height=target_height,
                 width=target_width,
-                method=method,
+                energy=energy,
+                strategy=strategy,
             )
             logger.info("Image resized successfully.")
         else:
@@ -244,7 +255,8 @@ def _execute(
                 image,
                 height=target_height,
                 width=target_width,
-                method=method,
+                energy=energy,
+                strategy=strategy,
             )
             if command == "remove":
                 result = resize_plan.result()

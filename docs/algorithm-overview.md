@@ -19,7 +19,10 @@ returns a `ResizePlan` that can produce:
 
 Targets may shrink or preserve each dimension. Enlargement remains deferred.
 
-## Energy maps
+The public `CarvingStrategy` enum selects backward or forward seam search.
+Backward is the default.
+
+## Backward energy maps
 
 `SeamCalculator` delegates pixel-energy calculation to a compatible callable.
 The returned value must be a finite, real, two-dimensional NumPy array matching
@@ -31,6 +34,23 @@ Built-in methods are:
    fixed border energy
 2. `SobelEnergy`, which applies Sobel operators to a grayscale image
 3. `LaplacianEnergy`, which computes grayscale Laplacian magnitude
+
+These energy maps belong to the backward strategy. Forward energy does not rank
+each pixel with a standalone map.
+
+## Forward energy
+
+Forward energy scores the new edges created when a seam is removed. For each
+pixel, the dynamic-programming recurrence considers the cost of entering from
+the left-up, up, or right-up predecessor. The transition costs use neighboring
+pixels from the current image, so the planner recomputes them after each seam
+removal.
+
+`forward_cumulative_costs()` and `find_forward_seam()` in
+`src/seamop/_search.py` implement the vertical search. The planner removes one
+seam at a time through `find_forward_seams()` and preserves source coordinates
+in the same way as backward planning. An explicit `energy=` callable is invalid
+with this strategy.
 
 ## One-seam search
 
@@ -52,7 +72,7 @@ construction are typically `O(HW)`. Backtracking is `O(H)`.
 
 ## Repeated seam planning
 
-`find_seams()` in `src/seamop/_planner.py` owns repeated search:
+`find_seams()` in `src/seamop/_planner.py` owns repeated backward search:
 
 1. Copy the image and create a flat source-index map.
 2. Compute energy for the current image.
@@ -60,9 +80,9 @@ construction are typically `O(HW)`. Backtracking is `O(H)`.
 4. Repeat until the requested count is reached.
 5. Reconstruct a boolean mask in the source image's coordinates.
 
-Public operations use a batch size of one, so energy is recomputed after every
-removal. The private batch-size parameter remains available for controlled
-performance experiments.
+Backward planning recomputes the energy map after every removal. Forward
+planning uses the same source-coordinate bookkeeping but removes one seam at a
+time because transition costs depend on the current image.
 
 ## Width and height reduction
 
@@ -84,6 +104,7 @@ The CLI maps directional commands onto this target-based model:
 - A vertical seam contains one pixel per row.
 - Adjacent seam pixels differ by at most one column.
 - Distinct seams in one result do not overlap.
+- Forward seams use the same one-pixel-per-row and connectivity rules.
 - Removing `n` vertical seams preserves height and reduces width by `n`.
 - Height reduction satisfies the corresponding transposed rules.
 - The source input is not mutated.

@@ -3,6 +3,7 @@ import pytest
 from PIL import Image
 
 from seamop.cli import main
+from seamop.core import CarvingStrategy
 from seamop.methods import GradientEnergy, LaplacianEnergy, SobelEnergy
 
 
@@ -205,11 +206,13 @@ def test_resize_selects_energy_method(
     output_path,
     monkeypatch,
 ):
-    selected_method = None
+    selected_energy = None
+    selected_strategy = None
 
-    def fake_resize(image, *, height, width, method):
-        nonlocal selected_method
-        selected_method = method
+    def fake_resize(image, *, height, width, energy, strategy):
+        nonlocal selected_energy, selected_strategy
+        selected_energy = energy
+        selected_strategy = strategy
         return image[:height, :width]
 
     monkeypatch.setattr("seamop.cli.resize", fake_resize)
@@ -219,4 +222,26 @@ def test_resize_selects_energy_method(
 
     main(args)
 
-    assert isinstance(selected_method, energy_type)
+    assert isinstance(selected_energy, energy_type)
+    assert selected_strategy is CarvingStrategy.BACKWARD
+
+
+def test_resize_selects_forward_strategy_without_energy(
+    input_image_path,
+    output_path,
+):
+    main(
+        [
+            "resize",
+            input_image_path,
+            "5",
+            "4",
+            "--strategy",
+            "forward",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    with Image.open(output_path) as output:
+        assert output.size == (5, 4)

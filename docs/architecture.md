@@ -7,19 +7,22 @@ repeated seam planning, one-seam search, and energy calculation.
 flowchart TD
     Client["Python caller or CLI"]
     Core["resize() / plan()"]
+    Strategy["CarvingStrategy"]
     Plan["ResizePlan construction"]
-    Calculator["SeamCalculator"]
     Planner["Repeated seam planner"]
-    Search["One-seam search"]
+    Backward["Backward search"]
+    Forward["Forward search"]
     Energy["Energy callable"]
     Result["Carved or highlighted image"]
 
     Client --> Core
+    Core --> Strategy
     Core --> Plan
-    Plan --> Calculator
-    Calculator --> Planner
-    Planner --> Search
-    Planner --> Energy
+    Strategy --> Plan
+    Plan --> Planner
+    Planner --> Backward
+    Planner --> Forward
+    Backward --> Energy
     Plan --> Result
     Core --> Result
 ```
@@ -37,6 +40,10 @@ flowchart TD
 
 Neither operation mutates the caller's input.
 
+`CarvingStrategy` selects backward or forward seam search. Backward strategy
+uses the configured energy callable; forward strategy owns its transition-cost
+calculation and does not accept an energy callable.
+
 ### Resize plans
 
 `src/seamop/_plan.py` owns multi-direction resize orchestration and the
@@ -51,14 +58,15 @@ original orientation.
 ### Seam calculation
 
 `src/seamop/calculator.py` validates an energy callable's output and delegates
-repeated removal to the private planner. It returns a boolean mask in source-image
-coordinates and does not mutate its input.
+backward repeated removal to the private planner. It returns a boolean mask in
+source-image coordinates and does not mutate its input.
 
-`src/seamop/_planner.py` owns repeated energy computation, seam removal, and
-source-coordinate tracking. Public operations recompute energy after every seam.
+`src/seamop/_planner.py` owns repeated seam removal and source-coordinate
+tracking. Backward planning recomputes energy after every seam; forward planning
+recomputes transition costs from the current image.
 
-`src/seamop/_search.py` contains the dynamic-programming cost calculation and
-one-seam backtracking logic.
+`src/seamop/_search.py` contains backward and forward dynamic-programming cost
+calculation and one-seam backtracking logic.
 
 ### Energy callables
 
@@ -91,11 +99,12 @@ numeric direction constants.
 1. A caller supplies an image and target dimensions.
 2. Input normalization creates an owned RGB `uint8` array.
 3. Target validation rejects zero, negative, or enlarged dimensions.
-4. The plan builder removes width seams, followed by height seams when needed.
-5. Each removal recomputes energy, finds one connected seam, and updates the
+4. Strategy selection chooses backward or forward seam search.
+5. The plan builder removes width seams, followed by height seams when needed.
+6. Each removal recomputes the relevant costs, finds one connected seam, and updates the
    working image and source-coordinate map.
-6. `ResizePlan` stores the final image and a source-sized removal mask.
-7. The caller receives an owned carved or highlighted image.
+7. `ResizePlan` stores the final image and a source-sized removal mask.
+8. The caller receives an owned carved or highlighted image.
 
 Errors propagate without exposing a partial result or mutating the source input.
 
@@ -105,6 +114,7 @@ The top-level public surface is:
 
 - `resize`
 - `plan` and `ResizePlan`
+- `CarvingStrategy`
 - the built-in energy methods
 - `__version__`
 

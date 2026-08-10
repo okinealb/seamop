@@ -19,7 +19,7 @@ def test_preview_marks_exactly_the_pixels_missing_from_result():
     original = image.copy()
     calculator = LeftEdgeCalculator()
 
-    plan = build_plan(image, height=3, width=3, calculator=calculator)
+    plan = build_plan(image, height=3, width=3, seam_finder=calculator)
     result = plan.result()
     preview = plan.preview((255, 255, 255))
 
@@ -43,7 +43,7 @@ def test_plan_owns_state_and_returns_independent_images():
         image,
         height=2,
         width=3,
-        calculator=LeftEdgeCalculator(),
+        seam_finder=LeftEdgeCalculator(),
     )
     expected_result = expected_source[1:, 1:]
 
