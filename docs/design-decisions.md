@@ -52,9 +52,9 @@ Tradeoff:
 The CLI exposes only built-in methods. A CLI plugin system remains deferred
 until there is a demonstrated use case.
 
-Top-level operations call this input `energy=`. The former `method=` keyword is
-kept as a deprecated beta compatibility alias until a separate migration and
-versioning decision removes it.
+Top-level operations use `energy=` for the backward energy callable. The
+deprecated `method=` alias was removed after one beta release. The advanced
+`SeamCalculator.method` attribute remains a separate interface.
 
 ## 4. Vertical search with transposed height processing
 
@@ -163,7 +163,8 @@ needed.
 Tradeoff:
 
 - Forward and backward paths have separate internal search contracts.
-- The beta API temporarily carries the deprecated `method=` alias.
+- The top-level energy keyword is distinct from the advanced calculator's
+  existing attribute name.
 
 ## Deferred work
 
