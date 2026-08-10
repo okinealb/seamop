@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from seamop import ResizePlan, plan, resize
+from seamop import CarvingStrategy, GradientEnergy, ResizePlan, plan, resize
 
 
 class FailingEnergy:
@@ -101,10 +101,68 @@ class TestResize:
                 image,
                 height=2,
                 width=2,
-                method=FailingEnergy(fail_on_call=2),
+                energy=FailingEnergy(fail_on_call=2),
             )
 
         assert np.array_equal(image, original)
+
+    def test_forward_strategy_returns_target_without_mutating_input(self):
+        image = np.random.default_rng(1).integers(
+            0,
+            256,
+            (6, 8, 3),
+            dtype=np.uint8,
+        )
+        original = image.copy()
+
+        result = resize(
+            image,
+            height=4,
+            width=6,
+            strategy=CarvingStrategy.FORWARD,
+        )
+
+        assert result.shape == (4, 6, 3)
+        assert result.dtype == np.uint8
+        assert np.array_equal(image, original)
+
+    def test_forward_strategy_rejects_energy(self):
+        image = np.zeros((3, 4, 3), dtype=np.uint8)
+
+        with pytest.raises(ValueError, match="does not accept"):
+            resize(
+                image,
+                height=3,
+                width=3,
+                energy=lambda current: np.zeros(current.shape[:2]),
+                strategy=CarvingStrategy.FORWARD,
+            )
+
+    def test_method_is_deprecated_alias_for_energy(self):
+        image = np.zeros((3, 4, 3), dtype=np.uint8)
+
+        with pytest.warns(DeprecationWarning, match="energy"):
+            result = resize(image, height=3, width=3, method=GradientEnergy())
+
+        assert result.shape == (3, 3, 3)
+
+    def test_rejects_both_energy_names(self):
+        image = np.zeros((3, 4, 3), dtype=np.uint8)
+
+        with pytest.raises(TypeError, match="either energy or method"):
+            resize(
+                image,
+                height=3,
+                width=3,
+                energy=GradientEnergy(),
+                method=GradientEnergy(),
+            )
+
+    def test_rejects_string_strategy(self):
+        image = np.zeros((3, 4, 3), dtype=np.uint8)
+
+        with pytest.raises(TypeError, match="CarvingStrategy"):
+            resize(image, height=3, width=3, strategy="forward")
 
 
 class TestPlan:
@@ -118,7 +176,7 @@ class TestPlan:
             columns = np.arange(current.shape[1], dtype=np.float32)
             return np.broadcast_to(columns, current.shape[:2]).copy()
 
-        resize_plan = plan(image, height=3, width=2, method=left_edge_energy)
+        resize_plan = plan(image, height=3, width=2, energy=left_edge_energy)
         first_result = resize_plan.result()
         second_result = resize_plan.result()
         first_preview = resize_plan.preview()

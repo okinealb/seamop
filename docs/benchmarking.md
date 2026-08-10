@@ -25,6 +25,15 @@ stress workload.
 The current suite measures vertical removal only. Horizontal removal and mixed
 vertical-horizontal resizing remain separate future benchmark additions.
 
+The committed suite continues to measure the default backward strategy so its
+reference remains comparable across releases. Forward-energy measurements are
+separate because the strategy has a different cost model and is substantially
+more expensive. Compare the same image sizes, seam counts, seed, warmup, rounds,
+Python version, and machine when measuring both strategies. Record the forward
+command, environment, medians, variability, and output-quality observations in
+the development journal rather than folding an unbounded forward workload into
+every routine benchmark run.
+
 Install the development environment, then run the benchmarks explicitly:
 
 ```bash

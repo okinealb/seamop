@@ -13,7 +13,7 @@ result must share the same seam decisions.
 from importlib.metadata import version as _distribution_version
 
 from ._plan import ResizePlan
-from .core import plan, resize
+from .core import CarvingStrategy, plan, resize
 from .methods import GradientEnergy, LaplacianEnergy, SobelEnergy
 
 __version__ = _distribution_version("seamop")
@@ -22,6 +22,7 @@ __all__ = [
     "ResizePlan",
     "resize",
     "plan",
+    "CarvingStrategy",
     "GradientEnergy",
     "LaplacianEnergy",
     "SobelEnergy",

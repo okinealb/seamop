@@ -14,6 +14,7 @@ def test_top_level_exports_are_intentional():
         "ResizePlan",
         "resize",
         "plan",
+        "CarvingStrategy",
         "GradientEnergy",
         "LaplacianEnergy",
         "SobelEnergy",

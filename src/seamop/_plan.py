@@ -1,6 +1,6 @@
 """Internal resize-plan result and construction."""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import SupportsIndex
 
@@ -8,9 +8,12 @@ import numpy as np
 import numpy.typing as npt
 
 from ._validation import validate_color
-from .calculator import SeamCalculator
 
 DEFAULT_HIGHLIGHT_COLOR = (255, 0, 0)
+SeamFinder = Callable[
+    [npt.NDArray[np.uint8], int],
+    npt.NDArray[np.bool_],
+]
 
 
 @dataclass(eq=False, frozen=True, repr=False, slots=True)
@@ -76,7 +79,7 @@ def build_plan(
     *,
     height: int,
     width: int,
-    calculator: SeamCalculator,
+    seam_finder: SeamFinder,
 ) -> ResizePlan:
     """Build a width-first shrinking plan from validated inputs."""
     source = image.copy()
@@ -92,7 +95,7 @@ def build_plan(
             working,
             source_indices,
             source_width - width,
-            calculator,
+            seam_finder,
         )
         removed[removed_indices] = True
 
@@ -103,7 +106,7 @@ def build_plan(
             oriented_image,
             oriented_indices,
             source_height - height,
-            calculator,
+            seam_finder,
         )
         removed[removed_indices] = True
         working = np.ascontiguousarray(np.transpose(oriented_image, (1, 0, 2)))
@@ -119,14 +122,14 @@ def _remove(
     image: npt.NDArray[np.uint8],
     source_indices: npt.NDArray[np.signedinteger],
     num_seams: int,
-    calculator: SeamCalculator,
+    seam_finder: SeamFinder,
 ) -> tuple[
     npt.NDArray[np.uint8],
     npt.NDArray[np.signedinteger],
     npt.NDArray[np.signedinteger],
 ]:
     """Remove planned seams from an oriented image and its source map."""
-    mask = calculator(image, num_seams)
+    mask = seam_finder(image, num_seams)
     height = image.shape[0]
     flat_mask = mask.ravel()
     flat_image = image.reshape(-1, 3)

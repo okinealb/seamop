@@ -39,8 +39,9 @@ Tradeoff:
 **Decision:** Accept plain functions and callable objects while retaining
 `EnergyMethod` for existing class-based implementations.
 
-`SeamCalculator` validates every returned energy map before search. The map must
-be a finite, real, two-dimensional numeric array matching the current image.
+`SeamCalculator` validates every returned energy map before backward search. The
+map must be a finite, real, two-dimensional numeric array matching the current
+image.
 The calculator and `EnergyMethod` are advanced interfaces, so they remain in
 their defining submodules rather than the top-level package.
 
@@ -51,15 +52,19 @@ Tradeoff:
 The CLI exposes only built-in methods. A CLI plugin system remains deferred
 until there is a demonstrated use case.
 
+Top-level operations call this input `energy=`. The former `method=` keyword is
+kept as a deprecated beta compatibility alias until a separate migration and
+versioning decision removes it.
+
 ## 4. Vertical search with transposed height processing
 
-**Decision:** Implement one vertical seam-search algorithm. Height reduction
-transposes the current image and source-coordinate map before using the same
-logic.
+**Decision:** Keep vertical search as the internal orientation for both carving
+strategies. Height reduction transposes the current image and source-coordinate
+map before using the corresponding vertical logic.
 
-This avoids duplicate dynamic-programming and backtracking implementations.
 Orientation is local to plan construction; callers never manage numeric
-direction values.
+direction values. Backward and forward search have separate cost contracts, but
+they share planning, compaction, and source-coordinate tracking.
 
 ## 5. Recompute energy after every seam
 
@@ -70,9 +75,11 @@ recomputation therefore matches repeated one-seam operations. A prior
 width-based batching heuristic selected different pixels without making that
 quality tradeoff explicit.
 
-The private planner retains an explicit batch-size parameter for measurement.
-No public fast mode is offered without reproducible evidence and a documented
-result contract.
+The planner extracts one seam per iteration. Backward operations recompute the
+energy map after each removal; forward operations recompute transition costs
+from the current image. Approximate batching is not part of the planner or
+public contract. Future batching experiments belong in temporary benchmark
+code with an explicit result contract.
 
 ## 6. Keep constants with their owners
 
@@ -139,10 +146,28 @@ compatibility package or command alias is provided.
 Version `0.1.0` begins the project's release history. Earlier versions were
 internal progress markers rather than releases of the intended distribution.
 
+## 11. Separate carving strategies from energy callables
+
+**Decision:** Expose a public `CarvingStrategy` enum separately from the
+`energy=` callable.
+
+`CarvingStrategy.BACKWARD` uses the default gradient energy when no callable is
+provided. `CarvingStrategy.FORWARD` computes transition costs from the current
+image and rejects an explicit energy callable. This keeps a finite algorithm
+choice distinct from the open-ended custom-energy interface.
+
+The CLI accepts strategy strings at its boundary and converts them to the enum.
+No public configuration dictionary, strategy hierarchy, or backend selector is
+needed.
+
+Tradeoff:
+
+- Forward and backward paths have separate internal search contracts.
+- The beta API temporarily carries the deprecated `method=` alias.
+
 ## Deferred work
 
 - Seam insertion and enlargement
-- Forward-energy search
 - User-selectable resize ordering
 - A measured approximate or accelerated mode
 - Raw seam and cost-table APIs
