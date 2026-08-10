@@ -1,0 +1,10 @@
+[package]
+name = "seamop-native"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "MIT"
+
+[lib]
+name = "seamop_native"
+path = "src/lib.rs"

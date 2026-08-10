@@ -1,6 +1,7 @@
 # Distribution / packaging
 .Python
 build/
+native/target/
 develop-eggs/
 dist/
 downloads/
