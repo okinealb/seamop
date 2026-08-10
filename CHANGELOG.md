@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/okinealb/seamop/compare/v0.1.5...v0.2.0) (2026-08-10)
+
+
+### Features
+
+* add forward carving strategy ([#47](https://github.com/okinealb/seamop/issues/47)) ([a5e7f21](https://github.com/okinealb/seamop/commit/a5e7f21c50a0b62d32ee7ea8f1f20845295748cc))
+
 ## [0.1.5](https://github.com/okinealb/seamop/compare/v0.1.4...v0.1.5) (2026-08-05)
 
 
