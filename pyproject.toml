@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 # Project metadata
 [project]
 name = "seamop"
-version = "0.2.0"
+version = "0.3.0"
 description = "A Python library and CLI for content-aware image resizing using seam carving."
 authors = [{ name = "Albert Kenneth" }]
 license = "MIT"

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/okinealb/seamop/compare/v0.2.0...v0.3.0) (2026-08-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove deprecated method alias ([#49](https://github.com/okinealb/seamop/issues/49))
+
+### Code Refactoring
+
+* remove deprecated method alias ([#49](https://github.com/okinealb/seamop/issues/49)) ([c2fecde](https://github.com/okinealb/seamop/commit/c2fecde64ea7a5846c1c9b54ca10a7fa080d4280))
+
 ## [0.2.0](https://github.com/okinealb/seamop/compare/v0.1.5...v0.2.0) (2026-08-10)
 
 
