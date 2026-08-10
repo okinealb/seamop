@@ -161,9 +161,6 @@ result = seamop.resize(
 )
 ```
 
-`method=` remains a deprecated compatibility alias for `energy=` during the
-beta migration. Passing both names is an error.
-
 The calculator validates every returned energy map before searching for a seam.
 The command-line interface intentionally limits energy selection to the three
 built-in methods.
@@ -213,7 +210,6 @@ The API reports invalid inputs before seam search:
 | Invalid energy-map shape or non-finite values | `ValueError` |
 | Invalid strategy type | `TypeError` |
 | Explicit energy with forward strategy | `ValueError` |
-| Both `energy=` and `method=` supplied | `TypeError` |
 | Missing or unreadable image path | `FileNotFoundError` or `ValueError` |
 
 Operational errors do not expose a partial public result or mutate the source

@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from seamop import CarvingStrategy, GradientEnergy, ResizePlan, plan, resize
+from seamop import CarvingStrategy, ResizePlan, plan, resize
 
 
 class FailingEnergy:
@@ -138,24 +138,16 @@ class TestResize:
                 strategy=CarvingStrategy.FORWARD,
             )
 
-    def test_method_is_deprecated_alias_for_energy(self):
+    @pytest.mark.parametrize("operation", [resize, plan])
+    def test_method_keyword_is_removed(self, operation):
         image = np.zeros((3, 4, 3), dtype=np.uint8)
 
-        with pytest.warns(DeprecationWarning, match="energy"):
-            result = resize(image, height=3, width=3, method=GradientEnergy())
-
-        assert result.shape == (3, 3, 3)
-
-    def test_rejects_both_energy_names(self):
-        image = np.zeros((3, 4, 3), dtype=np.uint8)
-
-        with pytest.raises(TypeError, match="either energy or method"):
-            resize(
+        with pytest.raises(TypeError):
+            operation(
                 image,
                 height=3,
                 width=3,
-                energy=GradientEnergy(),
-                method=GradientEnergy(),
+                method=lambda current: np.zeros(current.shape[:2]),
             )
 
     def test_rejects_string_strategy(self):
