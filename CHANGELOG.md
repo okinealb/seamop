@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/okinealb/seamop/compare/v0.3.0...v0.4.0) (2026-08-10)
+
+
+### Features
+
+* add private Rust gradient engine ([#51](https://github.com/okinealb/seamop/issues/51)) ([2df06fa](https://github.com/okinealb/seamop/commit/2df06fa6b18c3a2d926ebeefd2622bfc250e70f8))
+
 ## [0.3.0](https://github.com/okinealb/seamop/compare/v0.2.0...v0.3.0) (2026-08-10)
 
 
