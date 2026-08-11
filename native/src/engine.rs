@@ -3,9 +3,8 @@ use std::fmt;
 
 use crate::compact::{compact, transpose_indices, transpose_pixels};
 use crate::energy::gradient_energy;
-use crate::forward::find_forward_seam;
-use crate::seam::find_seam;
 use crate::CHANNELS;
+use crate::{forward, seam};
 
 #[derive(Clone, Copy)]
 enum Strategy {
@@ -188,9 +187,9 @@ fn remove_seams(
         let seam = match strategy {
             Strategy::Gradient => {
                 let energy = gradient_energy(image, height, *width);
-                find_seam(&energy, height, *width)?
+                seam::find_seam(&energy, height, *width)?
             }
-            Strategy::Forward => find_forward_seam(image, height, *width)?,
+            Strategy::Forward => forward::find_seam(image, height, *width)?,
         };
 
         for row in 0..height {
@@ -298,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    fn forward_plan_handles_vertical_removal() {
+    fn plan_forward_handles_vertical_removal() {
         let image: Vec<u8> =
             (0..4 * 5 * CHANNELS).map(|value| value as u8).collect();
         let original = image.clone();
@@ -323,7 +322,7 @@ mod tests {
     }
 
     #[test]
-    fn forward_plan_handles_horizontal_removal() {
+    fn plan_forward_handles_horizontal_removal() {
         let image: Vec<u8> =
             (0..4 * 5 * CHANNELS).map(|value| value as u8).collect();
         let original = image.clone();

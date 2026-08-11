@@ -2,12 +2,12 @@ use crate::engine::EngineError;
 use crate::image::pixel;
 use crate::seam::argmin;
 
-pub(crate) fn find_forward_seam(
+pub(crate) fn find_seam(
     image: &[u8],
     height: usize,
     width: usize,
 ) -> Result<Vec<usize>, EngineError> {
-    let (costs, preds) = forward_cumulative_costs(image, height, width);
+    let (costs, preds) = cumulative_costs(image, height, width);
     let last_row = (height - 1) * width;
     let column = argmin(&costs[last_row..last_row + width]);
 
@@ -25,7 +25,7 @@ pub(crate) fn find_forward_seam(
     Ok(seam)
 }
 
-fn forward_cumulative_costs(
+fn cumulative_costs(
     image: &[u8],
     height: usize,
     width: usize,
@@ -34,42 +34,41 @@ fn forward_cumulative_costs(
     let mut preds = vec![0; height * width];
 
     for row in 1..height {
-        let previous_start = (row - 1) * width;
-        let current_start = row * width;
+        let prev_start = (row - 1) * width;
+        let curr_start = row * width;
         let (left_costs, upward_costs, right_costs) =
-            forward_transition_costs(image, width, row);
+            transition_costs(image, width, row);
 
         for column in 0..width {
-            let mut best =
-                costs[previous_start + column] + upward_costs[column];
-            let mut previous_column = column;
+            let mut best = costs[prev_start + column] + upward_costs[column];
+            let mut prev_col = column;
 
             if column > 0 {
                 let candidate =
-                    costs[previous_start + column - 1] + left_costs[column];
+                    costs[prev_start + column - 1] + left_costs[column];
                 if candidate <= best {
                     best = candidate;
-                    previous_column = column - 1;
+                    prev_col = column - 1;
                 }
             }
             if column + 1 < width {
                 let candidate =
-                    costs[previous_start + column + 1] + right_costs[column];
+                    costs[prev_start + column + 1] + right_costs[column];
                 if candidate < best {
                     best = candidate;
-                    previous_column = column + 1;
+                    prev_col = column + 1;
                 }
             }
 
-            costs[current_start + column] = best;
-            preds[current_start + column] = previous_column;
+            costs[curr_start + column] = best;
+            preds[curr_start + column] = prev_col;
         }
     }
 
     (costs, preds)
 }
 
-fn forward_transition_costs(
+fn transition_costs(
     image: &[u8],
     width: usize,
     row: usize,
@@ -105,32 +104,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn forward_seam_matches_reference_path() {
+    fn find_seam_matches_reference_path() {
         let image = vec![
             58, 90, 92, 84, 109, 255, 104, 251, 115, 232, 45, 138, 40, 40, 255,
             216, 21, 220, 210, 61, 203, 216, 102, 108, 5, 17, 73, 186, 139,
             170, 81, 0, 7, 101, 227, 165,
         ];
 
-        let seam = find_forward_seam(&image, 4, 3).unwrap();
-        let (costs, _) = forward_cumulative_costs(&image, 4, 3);
+        let seam = find_seam(&image, 4, 3).unwrap();
+        let (costs, _) = cumulative_costs(&image, 4, 3);
 
         assert_eq!(seam, vec![1, 1, 0, 1]);
         assert_eq!(costs[10], 674.0);
     }
 
     #[test]
-    fn forward_seam_handles_single_column() {
+    fn find_seam_handles_single_column() {
         let image = vec![0; 4 * crate::CHANNELS];
-        let seam = find_forward_seam(&image, 4, 1).unwrap();
+        let seam = find_seam(&image, 4, 1).unwrap();
 
         assert_eq!(seam, vec![0, 0, 0, 0]);
     }
 
     #[test]
-    fn forward_seam_prefers_leftmost_ties() {
+    fn find_seam_prefers_leftmost_ties() {
         let image = vec![0; 3 * 4 * crate::CHANNELS];
-        let seam = find_forward_seam(&image, 3, 4).unwrap();
+        let seam = find_seam(&image, 3, 4).unwrap();
 
         assert_eq!(seam, vec![0, 0, 0]);
     }
