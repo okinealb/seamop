@@ -1,10 +1,10 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::compact::{compact, transpose_indices, transpose_pixels};
+use crate::compact::compact;
 use crate::energy::gradient_energy;
 use crate::CHANNELS;
-use crate::{forward, seam};
+use crate::{forward, seam, transpose};
 
 #[derive(Clone, Copy)]
 enum Strategy {
@@ -156,10 +156,16 @@ fn plan(
 
     if target_height < height {
         let oriented_height = current_width;
-        workspace.image =
-            transpose_pixels(&workspace.image, height, current_width);
-        workspace.source_indices =
-            transpose_indices(&workspace.source_indices, height, current_width);
+        workspace.image = transpose::transpose_pixels(
+            &workspace.image,
+            height,
+            current_width,
+        );
+        workspace.source_indices = transpose::transpose_indices(
+            &workspace.source_indices,
+            height,
+            current_width,
+        );
 
         let mut oriented_width = height;
         remove_seams(
@@ -171,8 +177,11 @@ fn plan(
             strategy,
         )?;
 
-        workspace.image =
-            transpose_pixels(&workspace.image, oriented_height, target_height);
+        workspace.image = transpose::transpose_pixels(
+            &workspace.image,
+            oriented_height,
+            target_height,
+        );
     }
 
     Ok(GradientPlan {
