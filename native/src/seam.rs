@@ -21,7 +21,8 @@ pub(crate) fn find_seam(
         let start = next_column.saturating_sub(1);
         let stop = (next_column + 2).min(width);
         let row_start = row * width;
-        let previous_column = argmin(&costs[row_start + start..row_start + stop]) + start;
+        let previous_column =
+            argmin(&costs[row_start + start..row_start + stop]) + start;
 
         if !costs[row_start + previous_column].is_finite() {
             return Err(EngineError::NoSeam);
@@ -33,7 +34,8 @@ pub(crate) fn find_seam(
 }
 
 fn cumulative_costs(energy: &[f32], height: usize, width: usize) -> Vec<f64> {
-    let mut costs: Vec<f64> = energy.iter().map(|value| f64::from(*value)).collect();
+    let mut costs: Vec<f64> =
+        energy.iter().map(|value| f64::from(*value)).collect();
 
     for row in 1..height {
         let previous_start = (row - 1) * width;
@@ -42,7 +44,9 @@ fn cumulative_costs(energy: &[f32], height: usize, width: usize) -> Vec<f64> {
         for column in 0..width {
             let start = column.saturating_sub(1);
             let stop = (column + 2).min(width);
-            let previous = argmin(&costs[previous_start + start..previous_start + stop]) + start;
+            let previous =
+                argmin(&costs[previous_start + start..previous_start + stop])
+                    + start;
             costs[current_start + column] += costs[previous_start + previous];
         }
     }
@@ -50,7 +54,7 @@ fn cumulative_costs(energy: &[f32], height: usize, width: usize) -> Vec<f64> {
     costs
 }
 
-fn argmin(values: &[f64]) -> usize {
+pub(crate) fn argmin(values: &[f64]) -> usize {
     let mut best = 0;
     for index in 1..values.len() {
         if values[index] < values[best] {

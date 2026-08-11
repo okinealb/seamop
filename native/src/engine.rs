@@ -3,8 +3,15 @@ use std::fmt;
 
 use crate::compact::{compact, transpose_indices, transpose_pixels};
 use crate::energy::gradient_energy;
+use crate::forward::find_forward_seam;
 use crate::seam::find_seam;
 use crate::CHANNELS;
+
+#[derive(Clone, Copy)]
+enum Strategy {
+    Gradient,
+    Forward,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EngineError {
@@ -19,7 +26,9 @@ pub enum EngineError {
 impl fmt::Display for EngineError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::EmptyImage => formatter.write_str("image dimensions must be positive"),
+            Self::EmptyImage => {
+                formatter.write_str("image dimensions must be positive")
+            }
             Self::InvalidImageLength { expected, actual } => write!(
                 formatter,
                 "image buffer must contain {expected} bytes; got {actual}"
@@ -33,7 +42,9 @@ impl fmt::Display for EngineError {
                 "target width must be between 1 and {source}; got {target}"
             ),
             Self::NoSeam => formatter.write_str("no finite seam remains"),
-            Self::SizeOverflow => formatter.write_str("image dimensions overflow the buffer size"),
+            Self::SizeOverflow => {
+                formatter.write_str("image dimensions overflow the buffer size")
+            }
         }
     }
 }
@@ -56,6 +67,41 @@ pub fn plan_gradient(
     width: usize,
     target_height: usize,
     target_width: usize,
+) -> Result<GradientPlan, EngineError> {
+    plan(
+        image,
+        height,
+        width,
+        target_height,
+        target_width,
+        Strategy::Gradient,
+    )
+}
+
+pub fn plan_forward(
+    image: &[u8],
+    height: usize,
+    width: usize,
+    target_height: usize,
+    target_width: usize,
+) -> Result<GradientPlan, EngineError> {
+    plan(
+        image,
+        height,
+        width,
+        target_height,
+        target_width,
+        Strategy::Forward,
+    )
+}
+
+fn plan(
+    image: &[u8],
+    height: usize,
+    width: usize,
+    target_height: usize,
+    target_width: usize,
+    strategy: Strategy,
 ) -> Result<GradientPlan, EngineError> {
     let pixel_count = checked_pixel_count(height, width)?;
     let expected_bytes = pixel_count
@@ -96,12 +142,14 @@ pub fn plan_gradient(
         &mut current_width,
         target_width,
         &mut removed_mask,
+        strategy,
     )?;
 
     if target_height < height {
         let oriented_height = current_width;
         working = transpose_pixels(&working, height, current_width);
-        source_indices = transpose_indices(&source_indices, height, current_width);
+        source_indices =
+            transpose_indices(&source_indices, height, current_width);
 
         let mut oriented_width = height;
         remove_seams(
@@ -111,6 +159,7 @@ pub fn plan_gradient(
             &mut oriented_width,
             target_height,
             &mut removed_mask,
+            strategy,
         )?;
 
         working = transpose_pixels(&working, oriented_height, target_height);
@@ -133,17 +182,24 @@ fn remove_seams(
     width: &mut usize,
     target_width: usize,
     removed_mask: &mut [bool],
+    strategy: Strategy,
 ) -> Result<(), EngineError> {
     while *width > target_width {
-        let energy = gradient_energy(image, height, *width);
-        let seam = find_seam(&energy, height, *width)?;
+        let seam = match strategy {
+            Strategy::Gradient => {
+                let energy = gradient_energy(image, height, *width);
+                find_seam(&energy, height, *width)?
+            }
+            Strategy::Forward => find_forward_seam(image, height, *width)?,
+        };
 
         for row in 0..height {
             let current_index = row * *width + seam[row];
             removed_mask[source_indices[current_index]] = true;
         }
 
-        let (next_image, next_indices) = compact(image, source_indices, height, *width, &seam);
+        let (next_image, next_indices) =
+            compact(image, source_indices, height, *width, &seam);
         *image = next_image;
         *source_indices = next_indices;
         *width -= 1;
@@ -152,7 +208,10 @@ fn remove_seams(
     Ok(())
 }
 
-fn checked_pixel_count(height: usize, width: usize) -> Result<usize, EngineError> {
+fn checked_pixel_count(
+    height: usize,
+    width: usize,
+) -> Result<usize, EngineError> {
     height.checked_mul(width).ok_or(EngineError::SizeOverflow)
 }
 
@@ -162,7 +221,8 @@ mod tests {
 
     #[test]
     fn vertical_plan_marks_removed_source_pixels() {
-        let image: Vec<u8> = (0..4 * 6 * CHANNELS).map(|value| value as u8).collect();
+        let image: Vec<u8> =
+            (0..4 * 6 * CHANNELS).map(|value| value as u8).collect();
         let original = image.clone();
 
         let plan = plan_gradient(&image, 4, 6, 4, 3).unwrap();
@@ -214,7 +274,8 @@ mod tests {
 
     #[test]
     fn mixed_plan_marks_all_removed_pixels() {
-        let image: Vec<u8> = (0..4 * 5 * CHANNELS).map(|value| value as u8).collect();
+        let image: Vec<u8> =
+            (0..4 * 5 * CHANNELS).map(|value| value as u8).collect();
         let original = image.clone();
 
         let plan = plan_gradient(&image, 4, 5, 3, 3).unwrap();
@@ -237,8 +298,58 @@ mod tests {
     }
 
     #[test]
+    fn forward_plan_handles_vertical_removal() {
+        let image: Vec<u8> =
+            (0..4 * 5 * CHANNELS).map(|value| value as u8).collect();
+        let original = image.clone();
+
+        let plan = plan_forward(&image, 4, 5, 4, 3).unwrap();
+
+        assert_eq!(plan.result.len(), 4 * 3 * CHANNELS);
+        assert_eq!(
+            plan.removed_mask.iter().filter(|removed| **removed).count(),
+            8
+        );
+        for row in 0..4 {
+            assert_eq!(
+                plan.removed_mask[row * 5..row * 5 + 5]
+                    .iter()
+                    .filter(|removed| **removed)
+                    .count(),
+                2
+            );
+        }
+        assert_eq!(image, original);
+    }
+
+    #[test]
+    fn forward_plan_handles_horizontal_removal() {
+        let image: Vec<u8> =
+            (0..4 * 5 * CHANNELS).map(|value| value as u8).collect();
+        let original = image.clone();
+
+        let plan = plan_forward(&image, 4, 5, 3, 5).unwrap();
+
+        assert_eq!(plan.result.len(), 3 * 5 * CHANNELS);
+        assert_eq!(
+            plan.removed_mask.iter().filter(|removed| **removed).count(),
+            5
+        );
+        for column in 0..5 {
+            let rows: Vec<usize> = (0..4)
+                .filter(|row| plan.removed_mask[row * 5 + column])
+                .collect();
+            assert_eq!(rows.len(), 1);
+        }
+        assert_eq!(image, original);
+    }
+
+    #[test]
     fn rejects_invalid_inputs() {
-        assert_eq!(plan_gradient(&[], 0, 2, 1, 1), Err(EngineError::EmptyImage));
+        assert_eq!(
+            plan_gradient(&[], 0, 2, 1, 1),
+            Err(EngineError::EmptyImage)
+        );
         assert_eq!(
             plan_gradient(&[0; 3], 1, 2, 1, 1),
             Err(EngineError::InvalidImageLength {
