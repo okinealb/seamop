@@ -5,6 +5,11 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      release_ref:
+        description: "Git ref to build and publish"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -24,6 +29,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          ref: ${{ inputs.release_ref || github.ref }}
 
       - name: Install uv and Python
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
@@ -33,10 +39,13 @@ jobs:
           enable-cache: true
 
       - name: Verify tag matches project version
+        env:
+          RELEASE_REF: ${{ inputs.release_ref || github.ref }}
         shell: bash
         run: |
           set -euo pipefail
-          tag_version="${GITHUB_REF_NAME#v}"
+          tag_version="${RELEASE_REF##*/}"
+          tag_version="${tag_version#v}"
           project_version="$(uv version --short)"
 
           if [[ "$tag_version" != "$project_version" ]]; then
@@ -76,6 +85,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          ref: ${{ inputs.release_ref || github.ref }}
 
       - name: Install uv and Python
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
@@ -126,6 +136,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          ref: ${{ inputs.release_ref || github.ref }}
 
       - name: Install uv and Python
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
