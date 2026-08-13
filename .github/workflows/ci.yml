@@ -137,11 +137,11 @@ jobs:
         env:
           SMOKE_DIR: ${{ runner.temp }}/seamop-wheel
         run: >-
-          python -c "import os, pathlib, subprocess, sys;
+          uv run --no-project --python 3.10 python -c "import os, pathlib, subprocess, sys;
           target = pathlib.Path(os.environ['SMOKE_DIR']);
           target.mkdir(parents=True, exist_ok=True);
           wheel = next(pathlib.Path('dist').glob('*.whl'));
-          subprocess.run(['uv', 'pip', 'install', '--target', str(target), str(wheel)], check=True);
+          subprocess.run(['uv', 'pip', 'install', '--python', sys.executable, '--target', str(target), str(wheel)], check=True);
           environment = os.environ.copy();
           environment['PYTHONPATH'] = str(target);
           subprocess.run([sys.executable, '-c', 'import numpy as np; import seamop; result = seamop.resize(np.zeros((3, 4, 3), dtype=np.uint8), height=2, width=3); assert result.shape == (2, 3, 3)'], env=environment, check=True)"
