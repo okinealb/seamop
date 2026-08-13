@@ -1,3 +1,8 @@
+//! Remove one vertical seam from the working image and source-index map.
+//!
+//! The source-index map keeps each working pixel tied to its position in the
+//! original image, so later removals can populate one source-sized mask.
+
 use crate::image::pixel;
 
 pub(crate) fn compact(

@@ -1,3 +1,10 @@
+//! End-to-end planning for the built-in carving strategies.
+//!
+//! Width reduction runs first. If height must also shrink, the working image
+//! and source-index map are transposed so the same vertical seam machinery can
+//! remove horizontal seams. The engine keeps the source coordinates throughout
+//! both stages and returns the final image plus one source-sized mask.
+
 use std::error::Error;
 use std::fmt;
 
@@ -20,6 +27,7 @@ struct Workspace {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Errors raised while validating or executing an engine resize plan.
 pub enum EngineError {
     EmptyImage,
     InvalidImageLength { expected: usize, actual: usize },
@@ -58,15 +66,23 @@ impl fmt::Display for EngineError {
 impl Error for EngineError {}
 
 #[derive(Debug, PartialEq, Eq)]
+/// The result of one complete built-in resize plan.
 pub struct Plan {
+    /// Final image pixels in row-major RGB order.
     pub result: Vec<u8>,
+    /// Pixels removed from the original image, in row-major order.
     pub removed_mask: Vec<bool>,
+    /// Height of the source image.
     pub source_height: usize,
+    /// Width of the source image.
     pub source_width: usize,
+    /// Height of the result image.
     pub target_height: usize,
+    /// Width of the result image.
     pub target_width: usize,
 }
 
+/// Plan a resize with backward gradient energy.
 pub fn plan(
     image: &[u8],
     height: usize,
@@ -84,6 +100,7 @@ pub fn plan(
     )
 }
 
+/// Plan a resize with forward transition costs.
 pub fn plan_forward(
     image: &[u8],
     height: usize,

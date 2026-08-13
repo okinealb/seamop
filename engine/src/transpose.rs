@@ -1,3 +1,8 @@
+//! Orientation helpers for horizontal seam removal.
+//!
+//! Pixel data and source indices are transposed together so vertical seam
+//! search can be reused without changing its connectivity rules.
+
 use crate::CHANNELS;
 
 pub(crate) fn transpose_pixels(

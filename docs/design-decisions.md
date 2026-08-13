@@ -113,21 +113,27 @@ Tradeoff:
   operation, which may add an owned-array copy. This can be optimized later if
   profiling shows a material cost.
 
-## 8. NumPy-first implementation
+## 8. NumPy at the Python boundary, flat buffers in Rust
 
-**Decision:** Use RGB `uint8` NumPy arrays as the computational representation.
+**Decision:** Use RGB `uint8` NumPy arrays at the public Python boundary and
+flat row-major RGB buffers inside the Rust engine.
 
-Vectorized row updates, boolean masks, and source-index arrays keep the algorithm
-readable while avoiding Python loops over pixels. Array shapes and dtypes remain
-runtime invariants because current type annotations do not encode dimensions.
+Normalization and public validation remain in Python. The built-in gradient and
+forward paths then cross the PyO3 boundary once, run the complete resize plan in
+Rust, and return NumPy arrays for the public result and removal mask. Sobel,
+Laplacian, and custom energy callables remain on the Python planning path.
+
+Array shapes and dtypes remain runtime invariants because current type
+annotations do not encode dimensions. The Rust boundary adds explicit checks
+for channel count, contiguous storage, buffer length, and target dimensions.
 
 ## 9. Versioning during beta
 
 **Decision:** The earlier internal API migration did not change version
 `0.5.1`.
 
-The intended distribution had not been released. Documentation records the
-removed beta interface so older local callers have a migration path.
+The migration was documented so older local callers have a migration path. The
+first published distribution is recorded in Section 10.
 
 ## 10. Distribution and package identity
 
@@ -143,8 +149,10 @@ The earlier `seamcarver` identity was never published as this project's
 intended distribution, and that PyPI name belongs to an unrelated project. No
 compatibility package or command alias is provided.
 
-Version `0.1.0` begins the project's release history. Earlier versions were
-internal progress markers rather than releases of the intended distribution.
+Version `0.1.0` was published to PyPI as the first distribution release.
+GitHub tags and GitHub Releases are separate records. The tag-triggered
+workflow publishes artifacts after a tag exists; it does not create the tag or
+the GitHub Release.
 
 ## 11. Separate carving strategies from energy callables
 

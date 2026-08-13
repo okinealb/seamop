@@ -1,3 +1,9 @@
+//! Backward gradient energy for RGB images.
+//!
+//! Interior pixels use the Euclidean magnitude of horizontal and vertical
+//! RGB differences. Border pixels receive the same fixed energy used by the
+//! Python `GradientEnergy` implementation.
+
 use crate::image::pixel;
 const BORDER_ENERGY: f32 = 1000.0;
 
