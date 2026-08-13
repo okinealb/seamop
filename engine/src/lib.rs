@@ -15,6 +15,6 @@ pub(crate) const CHANNELS: usize = 3;
 pub use engine::{plan, plan_forward, EngineError, Plan};
 
 #[pymodule]
-fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _engine(module: &Bound<'_, PyModule>) -> PyResult<()> {
     bindings::register(module)
 }

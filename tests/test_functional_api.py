@@ -49,7 +49,7 @@ class TestResize:
         assert np.array_equal(result, width_first)
 
     @pytest.mark.parametrize("strategy", list(CarvingStrategy))
-    def test_built_in_strategies_use_native_planner(self, monkeypatch, strategy):
+    def test_built_in_strategies_use_engine_planner(self, monkeypatch, strategy):
         image = np.random.default_rng(9).integers(
             0,
             256,
@@ -66,7 +66,7 @@ class TestResize:
 
         assert result.shape == (3, 3, 3)
 
-    def test_explicit_gradient_energy_uses_native_planner(self, monkeypatch):
+    def test_explicit_gradient_energy_uses_engine_planner(self, monkeypatch):
         image = np.zeros((3, 4, 3), dtype=np.uint8)
 
         def fail_python_planner(*args, **kwargs):

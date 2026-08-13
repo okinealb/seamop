@@ -22,14 +22,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Check native formatting
-        run: cargo fmt --manifest-path native/Cargo.toml -- --check
+      - name: Check engine formatting
+        run: cargo fmt --manifest-path engine/Cargo.toml -- --check
 
-      - name: Lint native code
-        run: cargo clippy --manifest-path native/Cargo.toml -- -D warnings
+      - name: Lint engine code
+        run: cargo clippy --manifest-path engine/Cargo.toml -- -D warnings
 
-      - name: Test native code
-        run: cargo test --manifest-path native/Cargo.toml
+      - name: Test engine code
+        run: cargo test --manifest-path engine/Cargo.toml
 
       - name: Install uv and Python
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0

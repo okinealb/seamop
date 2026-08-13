@@ -6,9 +6,9 @@ from typing import SupportsIndex
 import numpy as np
 import numpy.typing as npt
 
+from ._engine import plan as engine_plan
+from ._engine import plan_forward as engine_plan_forward
 from ._image import ImageInput, normalize_image
-from ._native import plan as native_plan
-from ._native import plan_forward as native_plan_forward
 from ._plan import ResizePlan, build_plan
 from ._validation import validate_resize_target
 from .calculator import SeamCalculator
@@ -61,10 +61,10 @@ def plan(
     if strategy is CarvingStrategy.FORWARD:
         if energy is not None:
             raise ValueError("The forward strategy does not accept an energy callable.")
-        result, removed = native_plan_forward(normalized, height, width)
+        result, removed = engine_plan_forward(normalized, height, width)
         return ResizePlan(normalized, result, removed)
     if energy is None or type(energy) is GradientEnergy:
-        result, removed = native_plan(normalized, height, width)
+        result, removed = engine_plan(normalized, height, width)
         return ResizePlan(normalized, result, removed)
     return build_plan(
         normalized,

@@ -61,7 +61,7 @@ fn run_plan(
     }
 
     let image = image.as_slice().map_err(|_| {
-        PyValueError::new_err("image must be C-contiguous for native planning")
+        PyValueError::new_err("image must be C-contiguous for engine planning")
     })?;
     let image = image.to_vec();
 
@@ -73,7 +73,7 @@ fn run_plan(
         (plan.target_height, plan.target_width, CHANNELS),
         plan.result,
     )
-    .map_err(|_| PyValueError::new_err("native result has an invalid shape"))?
+    .map_err(|_| PyValueError::new_err("engine result has an invalid shape"))?
     .into_pyarray(py)
     .unbind();
     let removed = Array2::from_shape_vec(
@@ -81,7 +81,7 @@ fn run_plan(
         plan.removed_mask,
     )
     .map_err(|_| {
-        PyValueError::new_err("native removal mask has an invalid shape")
+        PyValueError::new_err("engine removal mask has an invalid shape")
     })?
     .into_pyarray(py)
     .unbind();
