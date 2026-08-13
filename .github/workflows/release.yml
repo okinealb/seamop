@@ -131,7 +131,7 @@ jobs:
         with:
           version: "0.11.31"
           python-version: "3.10"
-          enable-cache: true
+          enable-cache: false
 
       - name: Build wheel
         uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
