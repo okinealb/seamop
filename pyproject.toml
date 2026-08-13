@@ -2,8 +2,8 @@
 
 # Build system requirements
 [build-system]
-requires = ["setuptools>=77"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.9.4,<2.0"]
+build-backend = "maturin"
 
 # Project metadata
 [project]
@@ -69,14 +69,11 @@ dev = [
     "ruff>=0.9.0",
 ]
 
-# Configuration for setuptools to find packages correctly
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["seamop*"]
-exclude = ["tests*", "test*", "build*", "dist*", "*.egg-info*"]
-
-[tool.setuptools.package-data]
-seamop = ["py.typed"]
+[tool.maturin]
+bindings = "pyo3"
+manifest-path = "native/Cargo.toml"
+module-name = "seamop._native"
+python-source = "src"
 
 # Pytest configuration 
 [tool.pytest.ini_options]
