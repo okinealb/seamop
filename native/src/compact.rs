@@ -1,3 +1,4 @@
+use crate::image::pixel;
 use crate::CHANNELS;
 
 pub(crate) fn compact(
@@ -25,7 +26,11 @@ pub(crate) fn compact(
     (next_image, next_indices)
 }
 
-pub(crate) fn transpose_pixels(image: &[u8], height: usize, width: usize) -> Vec<u8> {
+pub(crate) fn transpose_pixels(
+    image: &[u8],
+    height: usize,
+    width: usize,
+) -> Vec<u8> {
     let mut transposed = vec![0; image.len()];
 
     for row in 0..height {
@@ -40,7 +45,11 @@ pub(crate) fn transpose_pixels(image: &[u8], height: usize, width: usize) -> Vec
     transposed
 }
 
-pub(crate) fn transpose_indices(indices: &[usize], height: usize, width: usize) -> Vec<usize> {
+pub(crate) fn transpose_indices(
+    indices: &[usize],
+    height: usize,
+    width: usize,
+) -> Vec<usize> {
     let mut transposed = vec![0; indices.len()];
 
     for row in 0..height {
@@ -50,9 +59,4 @@ pub(crate) fn transpose_indices(indices: &[usize], height: usize, width: usize) 
     }
 
     transposed
-}
-
-fn pixel(image: &[u8], width: usize, row: usize, column: usize) -> &[u8] {
-    let start = (row * width + column) * CHANNELS;
-    &image[start..start + CHANNELS]
 }

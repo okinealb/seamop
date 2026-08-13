@@ -1,8 +1,11 @@
-use crate::CHANNELS;
-
+use crate::image::pixel;
 const BORDER_ENERGY: f32 = 1000.0;
 
-pub(crate) fn gradient_energy(image: &[u8], height: usize, width: usize) -> Vec<f32> {
+pub(crate) fn gradient_energy(
+    image: &[u8],
+    height: usize,
+    width: usize,
+) -> Vec<f32> {
     let mut energy = vec![BORDER_ENERGY; height * width];
 
     for row in 1..height.saturating_sub(1) {
@@ -30,9 +33,4 @@ pub(crate) fn gradient_energy(image: &[u8], height: usize, width: usize) -> Vec<
     }
 
     energy
-}
-
-fn pixel(image: &[u8], width: usize, row: usize, column: usize) -> &[u8] {
-    let start = (row * width + column) * CHANNELS;
-    &image[start..start + CHANNELS]
 }
