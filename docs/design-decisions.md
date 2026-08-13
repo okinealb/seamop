@@ -132,8 +132,8 @@ for channel count, contiguous storage, buffer length, and target dimensions.
 **Decision:** The earlier internal API migration did not change version
 `0.5.1`.
 
-The intended distribution had not been released. Documentation records the
-removed beta interface so older local callers have a migration path.
+The migration was documented so older local callers have a migration path. The
+first published distribution is recorded in Section 10.
 
 ## 10. Distribution and package identity
 
