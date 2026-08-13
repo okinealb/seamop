@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.1](https://github.com/okinealb/seamop/compare/v0.4.0...v0.4.1) (2026-08-13)
+
+
+### Performance Improvements
+
+* **rust:** reuse native working buffers ([#57](https://github.com/okinealb/seamop/issues/57)) ([d95fceb](https://github.com/okinealb/seamop/commit/d95fceb49ff047547577212eed46e407ad3f8720))
+
+
+### Documentation
+
+* **rust:** document engine boundary ([#62](https://github.com/okinealb/seamop/issues/62)) ([c389647](https://github.com/okinealb/seamop/commit/c389647e2b01bb2a272ded6ed777156ae84042a5))
+
 ## [0.4.0](https://github.com/okinealb/seamop/compare/v0.3.0...v0.4.0) (2026-08-10)
 
 
