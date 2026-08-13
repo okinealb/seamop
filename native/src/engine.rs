@@ -213,8 +213,8 @@ fn remove_seams(
             }
         };
 
-        for row in 0..height {
-            let current_index = row * *width + seam[row];
+        for (row, &column) in seam.iter().enumerate() {
+            let current_index = row * *width + column;
             removed_mask[workspace.source_indices[current_index]] = true;
         }
 
