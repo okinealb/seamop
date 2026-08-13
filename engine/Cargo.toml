@@ -1,12 +1,12 @@
 [package]
-name = "seamop-native"
+name = "seamop-engine"
 version = "0.1.0"
 edition = "2021"
 publish = false
 license = "MIT"
 
 [lib]
-name = "_native"
+name = "_engine"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 

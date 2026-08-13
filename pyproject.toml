@@ -71,8 +71,8 @@ dev = [
 
 [tool.maturin]
 bindings = "pyo3"
-manifest-path = "native/Cargo.toml"
-module-name = "seamop._native"
+manifest-path = "engine/Cargo.toml"
+module-name = "seamop._engine"
 python-source = "src"
 
 # Pytest configuration 

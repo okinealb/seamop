@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from seamop import CarvingStrategy, _native
+from seamop import CarvingStrategy, _engine
 from seamop._image import normalize_image
 from seamop._plan import build_plan
 from seamop._planner import find_forward_seams
@@ -10,10 +10,10 @@ from seamop.methods import GradientEnergy
 
 
 @pytest.mark.parametrize(
-    ("native_planner", "strategy"),
+    ("engine_planner", "strategy"),
     [
-        (_native.plan, CarvingStrategy.BACKWARD),
-        (_native.plan_forward, CarvingStrategy.FORWARD),
+        (_engine.plan, CarvingStrategy.BACKWARD),
+        (_engine.plan_forward, CarvingStrategy.FORWARD),
     ],
     ids=["backward", "forward"],
 )
@@ -21,8 +21,8 @@ from seamop.methods import GradientEnergy
     ("target_height", "target_width"),
     [(4, 5), (3, 5), (4, 3), (3, 3), (2, 2)],
 )
-def test_native_plan_matches_python_reference(
-    native_planner,
+def test_engine_plan_matches_python_reference(
+    engine_planner,
     strategy,
     target_height,
     target_width,
@@ -45,7 +45,7 @@ def test_native_plan_matches_python_reference(
         seam_finder=seam_finder,
     )
 
-    result, removed = native_planner(image, target_height, target_width)
+    result, removed = engine_planner(image, target_height, target_width)
 
     assert result.dtype == np.uint8
     assert removed.dtype == np.bool_
@@ -53,8 +53,8 @@ def test_native_plan_matches_python_reference(
     assert np.array_equal(removed, reference._removed)
 
 
-@pytest.mark.parametrize("native_planner", [_native.plan, _native.plan_forward])
-def test_native_plan_does_not_mutate_input(native_planner):
+@pytest.mark.parametrize("engine_planner", [_engine.plan, _engine.plan_forward])
+def test_engine_plan_does_not_mutate_input(engine_planner):
     image = np.random.default_rng(8).integers(
         0,
         256,
@@ -63,27 +63,27 @@ def test_native_plan_does_not_mutate_input(native_planner):
     )
     original = image.copy()
 
-    native_planner(image, 3, 4)
+    engine_planner(image, 3, 4)
 
     assert np.array_equal(image, original)
 
 
-def test_native_plan_rejects_wrong_channel_count():
+def test_engine_plan_rejects_wrong_channel_count():
     image = np.zeros((3, 4, 1), dtype=np.uint8)
 
     with pytest.raises(ValueError, match="exactly 3 RGB channels"):
-        _native.plan(image, 2, 3)
+        _engine.plan(image, 2, 3)
 
 
-def test_native_plan_rejects_noncontiguous_input():
+def test_engine_plan_rejects_noncontiguous_input():
     image = np.zeros((3, 6, 3), dtype=np.uint8)[:, ::2]
 
     with pytest.raises(ValueError, match="C-contiguous"):
-        _native.plan(image, 2, 2)
+        _engine.plan(image, 2, 2)
 
 
-def test_native_plan_rejects_invalid_target():
+def test_engine_plan_rejects_invalid_target():
     image = np.zeros((3, 4, 3), dtype=np.uint8)
 
     with pytest.raises(ValueError, match="target width"):
-        _native.plan(image, 3, 0)
+        _engine.plan(image, 3, 0)

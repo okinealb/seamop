@@ -1,9 +1,9 @@
 # Distribution / packaging
 .Python
 build/
-native/target/
-src/seamop/_native*.so
-src/seamop/_native*.pyd
+engine/target/
+src/seamop/_*.so
+src/seamop/_*.pyd
 develop-eggs/
 dist/
 downloads/
