@@ -7,8 +7,9 @@ import numpy as np
 import numpy.typing as npt
 
 from ._image import ImageInput, normalize_image
+from ._native import plan as native_plan
+from ._native import plan_forward as native_plan_forward
 from ._plan import ResizePlan, build_plan
-from ._planner import find_forward_seams
 from ._validation import validate_resize_target
 from .calculator import SeamCalculator
 from .methods import GradientEnergy
@@ -60,14 +61,16 @@ def plan(
     if strategy is CarvingStrategy.FORWARD:
         if energy is not None:
             raise ValueError("The forward strategy does not accept an energy callable.")
-        seam_finder = find_forward_seams
-    else:
-        seam_finder = SeamCalculator(GradientEnergy() if energy is None else energy)
+        result, removed = native_plan_forward(normalized, height, width)
+        return ResizePlan(normalized, result, removed)
+    if energy is None or type(energy) is GradientEnergy:
+        result, removed = native_plan(normalized, height, width)
+        return ResizePlan(normalized, result, removed)
     return build_plan(
         normalized,
         height=height,
         width=width,
-        seam_finder=seam_finder,
+        seam_finder=SeamCalculator(energy),
     )
 
 
