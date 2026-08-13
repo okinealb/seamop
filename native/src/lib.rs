@@ -8,4 +8,4 @@ mod transpose;
 
 pub(crate) const CHANNELS: usize = 3;
 
-pub use engine::{plan_forward, plan_gradient, EngineError, GradientPlan};
+pub use engine::{plan, plan_forward, EngineError, Plan};

@@ -58,7 +58,7 @@ impl fmt::Display for EngineError {
 impl Error for EngineError {}
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct GradientPlan {
+pub struct Plan {
     pub result: Vec<u8>,
     pub removed_mask: Vec<bool>,
     pub source_height: usize,
@@ -67,14 +67,14 @@ pub struct GradientPlan {
     pub target_width: usize,
 }
 
-pub fn plan_gradient(
+pub fn plan(
     image: &[u8],
     height: usize,
     width: usize,
     target_height: usize,
     target_width: usize,
-) -> Result<GradientPlan, EngineError> {
-    plan(
+) -> Result<Plan, EngineError> {
+    plan_with_strategy(
         image,
         height,
         width,
@@ -90,8 +90,8 @@ pub fn plan_forward(
     width: usize,
     target_height: usize,
     target_width: usize,
-) -> Result<GradientPlan, EngineError> {
-    plan(
+) -> Result<Plan, EngineError> {
+    plan_with_strategy(
         image,
         height,
         width,
@@ -101,14 +101,14 @@ pub fn plan_forward(
     )
 }
 
-fn plan(
+fn plan_with_strategy(
     image: &[u8],
     height: usize,
     width: usize,
     target_height: usize,
     target_width: usize,
     strategy: Strategy,
-) -> Result<GradientPlan, EngineError> {
+) -> Result<Plan, EngineError> {
     let pixel_count = checked_pixel_count(height, width)?;
     let expected_bytes = pixel_count
         .checked_mul(CHANNELS)
@@ -184,7 +184,7 @@ fn plan(
         );
     }
 
-    Ok(GradientPlan {
+    Ok(Plan {
         result: workspace.image,
         removed_mask,
         source_height: height,
@@ -255,7 +255,7 @@ mod tests {
             (0..4 * 6 * CHANNELS).map(|value| value as u8).collect();
         let original = image.clone();
 
-        let plan = plan_gradient(&image, 4, 6, 4, 3).unwrap();
+        let plan = plan(&image, 4, 6, 4, 3).unwrap();
 
         assert_eq!(plan.result.len(), 4 * 3 * CHANNELS);
         assert_eq!(
@@ -280,7 +280,7 @@ mod tests {
     fn horizontal_plan_marks_removed_source_pixels() {
         let image = vec![0; 4 * 5 * CHANNELS];
 
-        let plan = plan_gradient(&image, 4, 5, 3, 5).unwrap();
+        let plan = plan(&image, 4, 5, 3, 5).unwrap();
 
         assert_eq!(plan.result.len(), 3 * 5 * CHANNELS);
         assert_eq!(
@@ -308,7 +308,7 @@ mod tests {
             (0..4 * 5 * CHANNELS).map(|value| value as u8).collect();
         let original = image.clone();
 
-        let plan = plan_gradient(&image, 4, 5, 3, 3).unwrap();
+        let plan = plan(&image, 4, 5, 3, 3).unwrap();
 
         assert_eq!(plan.result.len(), 3 * 3 * CHANNELS);
         assert_eq!(
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn unchanged_plan_returns_image_and_empty_mask() {
         let image = vec![7; 2 * 3 * CHANNELS];
-        let plan = plan_gradient(&image, 2, 3, 2, 3).unwrap();
+        let plan = plan(&image, 2, 3, 2, 3).unwrap();
 
         assert_eq!(plan.result, image);
         assert!(plan.removed_mask.iter().all(|removed| !removed));
@@ -376,33 +376,30 @@ mod tests {
 
     #[test]
     fn rejects_invalid_inputs() {
+        assert_eq!(plan(&[], 0, 2, 1, 1), Err(EngineError::EmptyImage));
         assert_eq!(
-            plan_gradient(&[], 0, 2, 1, 1),
-            Err(EngineError::EmptyImage)
-        );
-        assert_eq!(
-            plan_gradient(&[0; 3], 1, 2, 1, 1),
+            plan(&[0; 3], 1, 2, 1, 1),
             Err(EngineError::InvalidImageLength {
                 expected: 6,
                 actual: 3,
             })
         );
         assert_eq!(
-            plan_gradient(&[0; 6], 1, 2, 0, 2),
+            plan(&[0; 6], 1, 2, 0, 2),
             Err(EngineError::InvalidTargetHeight {
                 target: 0,
                 source: 1,
             })
         );
         assert_eq!(
-            plan_gradient(&[0; 6], 1, 2, 1, 0),
+            plan(&[0; 6], 1, 2, 1, 0),
             Err(EngineError::InvalidTargetWidth {
                 target: 0,
                 source: 2,
             })
         );
         assert_eq!(
-            plan_gradient(&[0; 6], 1, 2, 1, 3),
+            plan(&[0; 6], 1, 2, 1, 3),
             Err(EngineError::InvalidTargetWidth {
                 target: 3,
                 source: 2,
