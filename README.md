@@ -28,6 +28,9 @@ For development, use the locked uv environment:
 uv sync --extra dev --frozen
 ```
 
+Compatible wheels include the compiled Rust engine. Installing from a source
+distribution requires a Rust toolchain to build that engine.
+
 ## Command line
 
 Resize the smaller example to 400 by 240 pixels:
@@ -117,6 +120,10 @@ result = seamop.resize(
 
 Backward carving also accepts built-in or custom energy callables through
 `energy=`. Pure forward carving does not accept an energy callable.
+
+The default gradient path and forward strategy run through the compiled Rust
+engine. Sobel, Laplacian, and custom energy callables remain on the Python
+path.
 
 See the [Python API guide](docs/api.md) for input rules, custom energy methods,
 errors, and the advanced seam-calculation interface.

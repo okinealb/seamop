@@ -7,6 +7,13 @@ The top-level API has two operations:
 
 Both operations create owned RGB `uint8` arrays and leave the source unchanged.
 
+## Execution paths
+
+The default backward strategy and the forward strategy use the compiled Rust
+engine after Python normalizes the image and validates the target dimensions.
+Sobel, Laplacian, and custom energy callables use the Python planning path so
+their energy calculations remain in Python.
+
 ## Resize an image
 
 ```python
@@ -123,8 +130,7 @@ constructor.
 ## Energy methods
 
 The default `GradientEnergy` method for backward strategy computes
-color-gradient magnitude. Two
-grayscale alternatives are included:
+color-gradient magnitude. Two grayscale alternatives are included:
 
 - `SobelEnergy`
 - `LaplacianEnergy`

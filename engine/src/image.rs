@@ -1,3 +1,5 @@
+//! Indexing helpers for flat, row-major RGB pixel storage.
+
 use crate::CHANNELS;
 
 pub(crate) fn pixel(

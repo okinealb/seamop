@@ -1,3 +1,10 @@
+//! PyO3 bindings for the private `seamop._engine` module.
+//!
+//! This boundary checks the channel count and memory layout, copies the input
+//! into Rust-owned storage, releases the GIL during planning, and converts the
+//! result and removal mask back into NumPy arrays. Engine errors become Python
+//! exceptions here rather than leaking Rust details into the package API.
+
 use numpy::ndarray::{Array2, Array3};
 use numpy::{IntoPyArray, PyArray2, PyArray3, PyReadonlyArray3};
 use pyo3::exceptions::{PyOverflowError, PyRuntimeError, PyValueError};

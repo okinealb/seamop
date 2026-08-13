@@ -1,3 +1,9 @@
+//! Backward-energy seam search.
+//!
+//! The search accumulates the cheapest predecessor cost for each pixel and
+//! backtracks from the least costly endpoint. Its result contains one column
+//! per row and adjacent columns differ by at most one.
+
 use crate::engine::EngineError;
 
 pub(crate) fn find_seam(

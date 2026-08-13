@@ -19,6 +19,10 @@ returns a `ResizePlan` that can produce:
 
 Targets may shrink or preserve each dimension. Enlargement remains deferred.
 
+The default backward path and the forward path run in the compiled Rust engine
+after Python normalizes the image and validates the request. Sobel, Laplacian,
+and custom energy callables use the Python planning path.
+
 The public `CarvingStrategy` enum selects backward or forward seam search.
 Backward is the default.
 
@@ -27,6 +31,9 @@ Backward is the default.
 `SeamCalculator` delegates pixel-energy calculation to a compatible callable.
 The returned value must be a finite, real, two-dimensional NumPy array matching
 the current image height and width. The calculator copies it to `float32`.
+
+The built-in gradient implementation in `engine/src/energy.rs` uses the same
+RGB gradient definition as `GradientEnergy`.
 
 Built-in methods are:
 
@@ -46,17 +53,18 @@ the left-up, up, or right-up predecessor. The transition costs use neighboring
 pixels from the current image, so the planner recomputes them after each seam
 removal.
 
-`forward_cumulative_costs()` and `find_forward_seam()` in
-`src/seamop/_search.py` implement the vertical search. The planner removes one
-seam at a time through `find_forward_seams()` and preserves source coordinates
-in the same way as backward planning. An explicit `energy=` callable is invalid
-with this strategy.
+`engine/src/forward.rs` implements the built-in forward search. The Python
+`forward_cumulative_costs()` and `find_forward_seam()` functions remain the
+reference path used by the Python planner and tests. Both paths remove one seam
+at a time and preserve source coordinates in the same way. An explicit
+`energy=` callable is invalid with this strategy.
 
 ## One-seam search
 
-`cumulative_costs()` in `src/seamop/_search.py` creates a `float64` cost
-table from the `float32` energy map. The wider accumulator prevents finite
-per-pixel values from overflowing during path accumulation.
+The backward search in `engine/src/seam.rs` and the Python
+`cumulative_costs()` implementation create a `float64` cost table from the
+`float32` energy map. The wider accumulator prevents finite per-pixel values
+from overflowing during path accumulation.
 
 For each row, the algorithm adds the cheapest reachable predecessor:
 
@@ -72,7 +80,8 @@ construction are typically `O(HW)`. Backtracking is `O(H)`.
 
 ## Repeated seam planning
 
-`find_seams()` in `src/seamop/_planner.py` owns repeated backward search:
+For built-in gradient and forward planning, `engine/src/engine.rs` owns the
+complete repeated-removal loop:
 
 1. Copy the image and create a flat source-index map.
 2. Compute energy for the current image.
@@ -80,18 +89,19 @@ construction are typically `O(HW)`. Backtracking is `O(H)`.
 4. Repeat until the requested count is reached.
 5. Reconstruct a boolean mask in the source image's coordinates.
 
-Backward planning recomputes the energy map after every removal. Forward
-planning uses the same source-coordinate bookkeeping but removes one seam at a
-time because transition costs depend on the current image.
+The Python path in `src/seamop/_planner.py` follows the same sequence for
+Sobel, Laplacian, and custom energy callables. Backward planning recomputes the
+energy map after every removal. Forward planning recomputes transition costs
+from the current image.
 
 ## Width and height reduction
 
-`build_plan()` in `src/seamop/_plan.py` reduces width first. It applies each
-seam mask to both the working image and its source-coordinate map.
+The Rust engine and `build_plan()` in `src/seamop/_plan.py` reduce width first.
+They apply each seam to both the working image and its source-coordinate map.
 
-To reduce height, it transposes the current image and coordinate map, reuses the
-vertical seam logic, then restores the original orientation. Removed source
-indices from both directions populate one source-sized mask.
+To reduce height, each path transposes the current image and coordinate map,
+reuses vertical seam logic, then restores the original orientation. Removed
+source indices from both directions populate one source-sized mask.
 
 The CLI maps directional commands onto this target-based model:
 

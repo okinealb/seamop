@@ -1,3 +1,9 @@
+//! Forward-energy seam search.
+//!
+//! Transition costs are computed from neighboring pixels in the current
+//! working image. Dynamic programming then chooses one connected vertical seam
+//! before compaction changes the image for the next iteration.
+
 use crate::engine::EngineError;
 use crate::image::pixel;
 use crate::seam::argmin;
