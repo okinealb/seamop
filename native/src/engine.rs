@@ -1,15 +1,22 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::compact::{compact, transpose_indices, transpose_pixels};
+use crate::compact::compact;
 use crate::energy::gradient_energy;
 use crate::CHANNELS;
-use crate::{forward, seam};
+use crate::{forward, seam, transpose};
 
 #[derive(Clone, Copy)]
 enum Strategy {
     Gradient,
     Forward,
+}
+
+struct Workspace {
+    image: Vec<u8>,
+    source_indices: Vec<usize>,
+    next_image: Vec<u8>,
+    next_indices: Vec<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -129,14 +136,17 @@ fn plan(
         });
     }
 
-    let mut working = image.to_vec();
-    let mut source_indices: Vec<usize> = (0..pixel_count).collect();
+    let mut workspace = Workspace {
+        image: image.to_vec(),
+        source_indices: (0..pixel_count).collect(),
+        next_image: Vec::with_capacity(expected_bytes),
+        next_indices: Vec::with_capacity(pixel_count),
+    };
     let mut removed_mask = vec![false; pixel_count];
     let mut current_width = width;
 
     remove_seams(
-        &mut working,
-        &mut source_indices,
+        &mut workspace,
         height,
         &mut current_width,
         target_width,
@@ -146,14 +156,20 @@ fn plan(
 
     if target_height < height {
         let oriented_height = current_width;
-        working = transpose_pixels(&working, height, current_width);
-        source_indices =
-            transpose_indices(&source_indices, height, current_width);
+        workspace.image = transpose::transpose_pixels(
+            &workspace.image,
+            height,
+            current_width,
+        );
+        workspace.source_indices = transpose::transpose_indices(
+            &workspace.source_indices,
+            height,
+            current_width,
+        );
 
         let mut oriented_width = height;
         remove_seams(
-            &mut working,
-            &mut source_indices,
+            &mut workspace,
             oriented_height,
             &mut oriented_width,
             target_height,
@@ -161,11 +177,15 @@ fn plan(
             strategy,
         )?;
 
-        working = transpose_pixels(&working, oriented_height, target_height);
+        workspace.image = transpose::transpose_pixels(
+            &workspace.image,
+            oriented_height,
+            target_height,
+        );
     }
 
     Ok(GradientPlan {
-        result: working,
+        result: workspace.image,
         removed_mask,
         source_height: height,
         source_width: width,
@@ -175,8 +195,7 @@ fn plan(
 }
 
 fn remove_seams(
-    image: &mut Vec<u8>,
-    source_indices: &mut Vec<usize>,
+    workspace: &mut Workspace,
     height: usize,
     width: &mut usize,
     target_width: usize,
@@ -186,21 +205,33 @@ fn remove_seams(
     while *width > target_width {
         let seam = match strategy {
             Strategy::Gradient => {
-                let energy = gradient_energy(image, height, *width);
+                let energy = gradient_energy(&workspace.image, height, *width);
                 seam::find_seam(&energy, height, *width)?
             }
-            Strategy::Forward => forward::find_seam(image, height, *width)?,
+            Strategy::Forward => {
+                forward::find_seam(&workspace.image, height, *width)?
+            }
         };
 
-        for row in 0..height {
-            let current_index = row * *width + seam[row];
-            removed_mask[source_indices[current_index]] = true;
+        for (row, &column) in seam.iter().enumerate() {
+            let current_index = row * *width + column;
+            removed_mask[workspace.source_indices[current_index]] = true;
         }
 
-        let (next_image, next_indices) =
-            compact(image, source_indices, height, *width, &seam);
-        *image = next_image;
-        *source_indices = next_indices;
+        compact(
+            &workspace.image,
+            &workspace.source_indices,
+            height,
+            *width,
+            &seam,
+            &mut workspace.next_image,
+            &mut workspace.next_indices,
+        );
+        std::mem::swap(&mut workspace.image, &mut workspace.next_image);
+        std::mem::swap(
+            &mut workspace.source_indices,
+            &mut workspace.next_indices,
+        );
         *width -= 1;
     }
 
