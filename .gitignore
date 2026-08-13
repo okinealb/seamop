@@ -2,6 +2,8 @@
 .Python
 build/
 native/target/
+src/seamop/_native*.so
+src/seamop/_native*.pyd
 develop-eggs/
 dist/
 downloads/
