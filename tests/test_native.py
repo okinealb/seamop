@@ -1,8 +1,12 @@
 import numpy as np
 import pytest
 
-import seamop
 from seamop import CarvingStrategy, _native
+from seamop._image import normalize_image
+from seamop._plan import build_plan
+from seamop._planner import find_forward_seams
+from seamop.calculator import SeamCalculator
+from seamop.methods import GradientEnergy
 
 
 @pytest.mark.parametrize(
@@ -29,11 +33,16 @@ def test_native_plan_matches_python_reference(
         (4, 5, 3),
         dtype=np.uint8,
     )
-    reference = seamop.plan(
-        image,
+    normalized = normalize_image(image)
+    if strategy is CarvingStrategy.FORWARD:
+        seam_finder = find_forward_seams
+    else:
+        seam_finder = SeamCalculator(GradientEnergy())
+    reference = build_plan(
+        normalized,
         height=target_height,
         width=target_width,
-        strategy=strategy,
+        seam_finder=seam_finder,
     )
 
     result, removed = native_planner(image, target_height, target_width)

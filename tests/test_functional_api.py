@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from seamop import CarvingStrategy, ResizePlan, plan, resize
+from seamop import CarvingStrategy, GradientEnergy, ResizePlan, plan, resize
 
 
 class FailingEnergy:
@@ -47,6 +47,41 @@ class TestResize:
         width_first = resize(width_first, height=3, width=3)
 
         assert np.array_equal(result, width_first)
+
+    @pytest.mark.parametrize("strategy", list(CarvingStrategy))
+    def test_built_in_strategies_use_native_planner(self, monkeypatch, strategy):
+        image = np.random.default_rng(9).integers(
+            0,
+            256,
+            (4, 5, 3),
+            dtype=np.uint8,
+        )
+
+        def fail_python_planner(*args, **kwargs):
+            raise AssertionError("the Python planner should not be used")
+
+        monkeypatch.setattr("seamop.core.build_plan", fail_python_planner)
+
+        result = resize(image, height=3, width=3, strategy=strategy)
+
+        assert result.shape == (3, 3, 3)
+
+    def test_explicit_gradient_energy_uses_native_planner(self, monkeypatch):
+        image = np.zeros((3, 4, 3), dtype=np.uint8)
+
+        def fail_python_planner(*args, **kwargs):
+            raise AssertionError("the Python planner should not be used")
+
+        monkeypatch.setattr("seamop.core.build_plan", fail_python_planner)
+
+        result = resize(
+            image,
+            height=3,
+            width=3,
+            energy=GradientEnergy(),
+        )
+
+        assert result.shape == (3, 3, 3)
 
     def test_same_size_returns_independent_image(self):
         image = np.zeros((2, 3, 3), dtype=np.uint8)
