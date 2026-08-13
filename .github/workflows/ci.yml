@@ -59,8 +59,8 @@ jobs:
       - name: Check docstring examples
         run: uv run --frozen pytest --doctest-modules src/seamop
 
-      - name: Build package
-        run: uv build
+      - name: Build source distribution
+        run: uv build --sdist --no-sources
 
   test:
     name: Python ${{ matrix.python-version }}
@@ -88,3 +88,60 @@ jobs:
 
       - name: Run tests
         run: uv run --frozen pytest
+
+  package:
+    name: Wheel ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: ubuntu-24.04
+            interpreter: python3.10
+            manylinux: "2014"
+          - name: macos-arm64
+            runner: macos-15
+            interpreter: python
+            manylinux: "off"
+          - name: macos-x86_64
+            runner: macos-15-intel
+            interpreter: python
+            manylinux: "off"
+          - name: windows-x86_64
+            runner: windows-2025
+            interpreter: python
+            manylinux: "off"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.31"
+          python-version: "3.10"
+          enable-cache: true
+
+      - name: Build wheel
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          maturin-version: v1.13.3
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --locked --out dist --compatibility pypi -i ${{ matrix.interpreter }}
+
+      - name: Install and smoke-test wheel
+        env:
+          SMOKE_DIR: ${{ runner.temp }}/seamop-wheel
+        run: >-
+          python -c "import os, pathlib, subprocess, sys;
+          target = pathlib.Path(os.environ['SMOKE_DIR']);
+          target.mkdir(parents=True, exist_ok=True);
+          wheel = next(pathlib.Path('dist').glob('*.whl'));
+          subprocess.run(['uv', 'pip', 'install', '--target', str(target), str(wheel)], check=True);
+          environment = os.environ.copy();
+          environment['PYTHONPATH'] = str(target);
+          subprocess.run([sys.executable, '-c', 'import numpy as np; import seamop; result = seamop.resize(np.zeros((3, 4, 3), dtype=np.uint8), height=2, width=3); assert result.shape == (2, 3, 3)'], env=environment, check=True)"
