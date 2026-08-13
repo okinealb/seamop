@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/okinealb/seamop/compare/v0.4.1...v0.4.2) (2026-08-13)
+
+
+### Bug Fixes
+
+* **ci:** allow manual release retries ([#66](https://github.com/okinealb/seamop/issues/66)) ([f9d3333](https://github.com/okinealb/seamop/commit/f9d3333d94ffffa4e0db45827447cf532fb24882))
+* **ci:** avoid empty uv cache in release wheels ([#64](https://github.com/okinealb/seamop/issues/64)) ([4ee0be3](https://github.com/okinealb/seamop/commit/4ee0be3646a2146e54585caa474387da6f0772d5))
+
 ## [0.4.1](https://github.com/okinealb/seamop/compare/v0.4.0...v0.4.1) (2026-08-13)
 
 
